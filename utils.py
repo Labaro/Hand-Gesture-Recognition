@@ -1,6 +1,24 @@
 import pandas as pd
 import numpy as np
 import csv
+import sys
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import GlobalAveragePooling2D
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.layers import Dropout
+from keras.layers import LSTM
+from keras.layers import TimeDistributed
+from keras.layers import Activation
+from keras.layers import BatchNormalization
+
+from keras.optimizers import SGD
 
 from scipy.interpolate import splev, splprep
 
@@ -89,3 +107,66 @@ def interpolate(n, sequence_sizes, final_size):
             new_points = np.hstack([X.reshape(-1, 1), Y.reshape(-1, 1), Z.reshape(-1, 1)])
             N[j, :, i, :] = new_points
     return N
+
+
+def get_train_test(test_size, seed=None):
+    list_image = []
+    for i in range(1960):
+        im = mpimg.imread(f"image/train/{i}.png")
+        list_image.append(np.copy(im)[:, :, :3])
+    _, labels, _ = read_csv_infos('infos_train.csv')
+    labels = to_categorical(np.array(labels) - 1)
+    X_train, X_test, y_train, y_test = train_test_split(list_image, labels, test_size=test_size, random_state=seed)
+    return np.array(X_train), np.array(X_test), np.array(y_train), np.array(y_test)
+
+
+def run_test_harness():
+    trainX, testX, trainY, testY = get_train_test(0.1, seed=1)
+    # define model
+    model = define_model()
+    # fit model
+    history = model.fit(trainX, trainY, epochs=35, batch_size=10, validation_data=(testX, testY), verbose=1)
+    # evaluate model
+    _, acc = model.evaluate(testX, testY, verbose=0)
+    print('> %.3f' % (acc * 100.0))
+    # learning curves
+    summarize_diagnostics(history)
+    return model
+
+
+def summarize_diagnostics(history):
+    # plot loss
+    plt.subplot(211)
+    plt.title('Cross Entropy Loss')
+    plt.plot(history.history['loss'], color='blue', label='train')
+    plt.plot(history.history['val_loss'], color='orange', label='test')
+    # plot accuracy
+    plt.subplot(212)
+    plt.title('Classification Accuracy')
+    plt.plot(history.history['accuracy'], color='blue', label='train')
+    plt.plot(history.history['val_accuracy'], color='orange', label='test')
+    # save plot to file
+    filename = sys.argv[0].split('/')[-1]
+    plt.savefig(filename + '_plot.png')
+    plt.close()
+
+
+def define_model():
+    model = Sequential()
+    model.add(Conv2D(64, (3, 3), input_shape=(162, 22, 3), padding='same', strides=1, activation='relu'))
+    model.add(BatchNormalization(trainable=True))
+    model.add(Conv2D(64, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(128, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(BatchNormalization(trainable=True))
+    model.add(Conv2D(128, (3, 3), padding='same', strides=1, activation='relu'))
+    #model.add(MaxPooling2D(pool_size=(2, 2)))
+    #model.add(Conv2D(256, (3, 3), padding='same', strides=1, activation='relu'))
+    #model.add(BatchNormalization(trainable=True))
+    #model.add(Conv2D(256, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(GlobalAveragePooling2D())
+    model.add(Dropout(0.3))
+    model.add(Dense(28, activation='softmax'))
+    opt = SGD(lr=0.01, momentum=0.9)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    return model

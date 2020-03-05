@@ -1,11 +1,6 @@
 from utils import *
 from load_and_display_data import *
-
-n_train = get_skeleton("skeletons_world_train.csv")
-n_test = get_skeleton("skeletons_world_test.csv")
-size_train = read_csv_infos("infos_train.csv")[-1]
-size_test = read_csv_infos("infos_test.csv", test=True)[-1]
-
+import sys
 
 """
 sample = n[3, :size[3], -1, :].T
@@ -23,7 +18,7 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.plot(*sample, 'r-')
 ax.plot(X, Y, Z, 'ro')
-plt.show()"""
+plt.show()
 
 n_train = normalize_position(n_train)
 n_test = normalize_position(n_test)
@@ -44,4 +39,21 @@ for i in range(n_train.shape[0]):
     
 for i in range(n_test.shape[0]):
     im = to_image(N_test, i, min, max)
-    plt.imsave("image/test/"+str(i)+".png", im)
+    plt.imsave("image/test/"+str(i)+".png", im)"""
+
+model = run_test_harness()
+
+list_image = []
+for i in range(840):
+    im = mpimg.imread(f"image/test/{i}.png")
+    list_image.append(np.copy(im)[:, :, :3])
+
+id_test, _,  sequences_test = read_csv_infos('infos_test.csv', test=True)
+pred = model.predict_classes(np.array(list_image))
+
+pred = pred + 1
+full_pred = np.vstack((np.array(id_test), pred))
+
+full_pred_pd = pd.DataFrame(full_pred.T)
+
+full_pred_pd.to_csv('full_pred.csv', index=False, header=['Id', 'prediction'], sep=',')
