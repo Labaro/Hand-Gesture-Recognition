@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import csv
 
+from scipy.interpolate import splev, splprep
+
 
 def get_skeleton(file_path, dim_joints=3):
     n = []
@@ -21,7 +23,7 @@ def get_skeleton(file_path, dim_joints=3):
     return n
 
 
-def read_csv_infos(file):
+def read_csv_infos(file, test=False):
     idx = []
     labels = []
     sizesequences = []
@@ -31,8 +33,11 @@ def read_csv_infos(file):
         for d in data:
             j = d[0].split(',')
             idx.append(int(j[0]))
-            labels.append(int(j[1]))
-            sizesequences.append(int(j[2]))
+            if test:
+                sizesequences.append(int(j[1]))
+            else:
+                labels.append(int(j[1]))
+                sizesequences.append(int(j[2]))
 
     return idx, labels, sizesequences
 
@@ -62,8 +67,25 @@ def reset_zeros(n, infos):
     return N
 
 
-def to_image(sample):
-    min = np.array([np.min(sample[:, :, 0]), np.min(sample[:, :, 1]), np.min(sample[:, :, 2])])
-    max = np.array([np.max(sample[:, :, 0]), np.max(sample[:, :, 1]), np.max(sample[:, :, 2])])
+def to_image(n, k, min, max):
+    sample = n[k]
+    # min = np.array([np.min(n[:, :, :, 0]), np.min(n[:, :, :, 1]), np.min(n[:, :, :, 2])])
+    # max = np.array([np.max(n[:, :, :, 0]), np.max(n[:, :, :, 1]), np.max(n[:, :, :, 2])])
     im = (max - sample) / (max - min)
     return im
+
+
+def interpolate(n, sequence_sizes, final_size):
+    N = np.zeros((n.shape[0], final_size, n.shape[2], n.shape[3]))
+    for j in range(n.shape[0]):
+        for i in range(22):
+            sample = n[j, :sequence_sizes[j], i, :]
+            okay = np.where(
+                np.abs(np.diff(sample[:, 0])) + np.abs(np.diff(sample[:, 1])) + np.abs(np.diff(sample[:, 2])) > 0)
+            okay = np.append(okay, okay[0][-1] + 1)
+            sample = sample[okay].T
+            tck, u = splprep([*sample], s=0, k=2)
+            X, Y, Z = splev(np.linspace(0, 1, final_size), tck)
+            new_points = np.hstack([X.reshape(-1, 1), Y.reshape(-1, 1), Z.reshape(-1, 1)])
+            N[j, :, i, :] = new_points
+    return N

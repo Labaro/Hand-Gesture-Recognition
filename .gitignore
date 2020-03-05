@@ -134,3 +134,4 @@ dmypy.json
 /skeletons_image_train.csv
 /skeletons_world_test.csv
 /skeletons_world_train.csv
+/image/

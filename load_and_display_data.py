@@ -30,7 +30,7 @@ def read_csv_skeleton(file, dim_joints):
 
 # Function to load a csv skeleton file sequence
 # It returns idx, sequence label and sizesequence (with non zero padding frames)
-def read_csv_infos(file):
+def read_csv_infos(file, test=False):
     idx = []
     labels = []
     sizesequences = []
@@ -40,8 +40,11 @@ def read_csv_infos(file):
         for d in data:
             j = d[0].split(',')
             idx.append(int(j[0]))
-            labels.append(int(j[1]))
-            sizesequences.append(int(j[2]))
+            if test:
+                sizesequences.append(int(j[1]))
+            else:
+                labels.append(int(j[1]))
+                sizesequences.append(int(j[2]))
 
     return idx, labels, sizesequences
 
@@ -90,7 +93,7 @@ def diplay_skeleton(skeletons_image, size):
         [19, 20],
         [20, 21]
     ]
-    );
+    )
 
     skeletons_image = np.reshape(skeletons_image,
                                  (skeletons_image.shape[0], skeletons_image.shape[1] * skeletons_image.shape[2]))
@@ -120,7 +123,6 @@ def diplay_skeleton(skeletons_image, size):
 
         skeletons_display[id_image, 0, :, :] = x
         skeletons_display[id_image, 1, :, :] = y
-
     for id_image in range(0, size):
         plt.clf()
         plt.imshow(pngDepthFiles[id_image, :])
@@ -129,6 +131,6 @@ def diplay_skeleton(skeletons_image, size):
 
 
 if __name__ == '__main__':
-    skeletons = read_csv_skeleton('skeletons_image_test.csv', 2)
+    skeletons = read_csv_skeleton('skeletons_image_test.csv', 3)
     idx, labels, sequences = read_csv_infos('infos_train.csv')
-    diplay_skeleton(skeletons[6], sequences[6])
+    diplay_skeleton(skeletons[2], sequences[2])
