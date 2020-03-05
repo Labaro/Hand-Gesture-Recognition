@@ -136,3 +136,4 @@ dmypy.json
 /skeletons_world_train.csv
 /image/
 /main.py_plot.png
+/full_pred.csv

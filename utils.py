@@ -18,7 +18,7 @@ from keras.layers import TimeDistributed
 from keras.layers import Activation
 from keras.layers import BatchNormalization
 
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 
 from scipy.interpolate import splev, splprep
 
@@ -160,13 +160,17 @@ def define_model():
     model.add(Conv2D(128, (3, 3), padding='same', strides=1, activation='relu'))
     model.add(BatchNormalization(trainable=True))
     model.add(Conv2D(128, (3, 3), padding='same', strides=1, activation='relu'))
-    #model.add(MaxPooling2D(pool_size=(2, 2)))
-    #model.add(Conv2D(256, (3, 3), padding='same', strides=1, activation='relu'))
-    #model.add(BatchNormalization(trainable=True))
-    #model.add(Conv2D(256, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(256, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(BatchNormalization(trainable=True))
+    model.add(Conv2D(256, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(512, (3, 3), padding='same', strides=1, activation='relu'))
+    model.add(BatchNormalization(trainable=True))
+    model.add(Conv2D(512, (3, 3), padding='same', strides=1, activation='relu'))
     model.add(GlobalAveragePooling2D())
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.4))
     model.add(Dense(28, activation='softmax'))
-    opt = SGD(lr=0.01, momentum=0.9)
+    opt = Adam(learning_rate=0.005)
     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
